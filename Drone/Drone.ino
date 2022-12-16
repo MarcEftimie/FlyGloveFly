@@ -182,29 +182,13 @@ void read_imu_data() {
   sensors_event_t event;
   bno.getEvent(&event);
 
-  /* The processing sketch expects data as roll, pitch, heading */
-//  Serial.print(F("Orientation: "));
-//  Serial.print((float)event.orientation.x);
-//  Serial.print(F(" "));
-//  Serial.print((float)event.orientation.y);
-//  Serial.print(F(" "));
-//  Serial.print((float)event.orientation.z);
-//  Serial.println(F(""));
   gyro_raw[0] = event.orientation.x;
   gyro_raw[1] = event.orientation.y;
   gyro_raw[2] = event.orientation.z;
 
   /* Also send calibration data for each sensor. */
-//  uint8_t sys, gyro, accel, mag = 0;
-//  bno.getCalibration(&sys, &gyro, &accel, &mag);
-//  Serial.print(F("Calibration: "));
-//  Serial.print(sys, DEC);
-//  Serial.print(F(" "));
-//  Serial.print(gyro, DEC);
-//  Serial.print(F(" "));
-//  Serial.print(accel, DEC);
-//  Serial.print(F(" "));
-//  Serial.println(mag, DEC);
+ uint8_t sys, gyro, accel, mag = 0;
+ bno.getCalibration(&sys, &gyro, &accel, &mag);
 
 }
 
@@ -319,9 +303,6 @@ void calculate_real_orientation() {
 }
 
 void PID_controller() {
-//  Serial.println("xxxxxxxxxxxxxxxxxx");
-//  Serial.println(gyro_real[0]);
-//  Serial.println(gyro_real_last[0]);
   // Yaw
   angle_x = gyro_real[0];
 
@@ -332,11 +313,6 @@ void PID_controller() {
   // Pitch
   angle_z_plus = -gyro_real[2];
   angle_z_minus = gyro_real[2];
-
-//  integral_y_plus += -gyro_real[1];
-//  integral_y_minus += gyro_real[1];
-//  integral_z_plus += -gyro_real[2];
-//  integral_z_minus += gyro_real[2];
 
   // Yaw
   diff_x = gyro_real[0] - gyro_real_last[0];
@@ -349,29 +325,10 @@ void PID_controller() {
   diff_z_plus = -(gyro_real[2] - gyro_real_last[2]);
   diff_z_minus = gyro_real[2] - gyro_real_last[2];
 
-  
-
-//  Serial.println("+++++++++++++++++");
-//  Serial.println(y_plus_angle);
-//  Serial.println(y_minus_angle);
-//  Serial.println(z_plus_angle);
-//  Serial.println(z_minus_angle);
-//  Serial.println("-----------------");
-//  Serial.println("-----------------");
-//  Serial.println(diff_gyro_y_plus);
-//  Serial.println(diff_gyro_y_minus);
-//  Serial.println(diff_gyro_z_plus);
-//  Serial.println(diff_gyro_z_minus);
-//  Serial.println("-----------------");
 
   int potVal = analogRead(potentiometerPin); // read input from potentiometer.
   
   int pwmVal = map(potVal,0, 1023, 1000, 1900); // maps potentiometer values to PWM value.
-  
-  motor_y_plus_thrust = pwmVal - K_P_yaw*angle_x - K_D_yaw*diff_x;
-  motor_y_minus_thrust = pwmVal - K_P_yaw*angle_x - K_D_yaw*diff_x;
-  motor_z_plus_thrust = pwmVal + K_P_yaw*angle_x + K_D_yaw*diff_x;
-  motor_z_minus_thrust = pwmVal + K_P_yaw*angle_x + K_D_yaw*diff_x;
   
   motor_y_plus_thrust = pwmVal - K_P*angle_y_plus + K_D*diff_y_plus - K_P_yaw*angle_x - K_D_yaw*diff_x;
   motor_y_minus_thrust = pwmVal - K_P*angle_y_minus + K_D*diff_y_minus - K_P_yaw*angle_x - K_D_yaw*diff_x;
