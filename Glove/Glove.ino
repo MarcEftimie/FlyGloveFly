@@ -27,14 +27,6 @@ bool imu_output = true;
 bool rst_button_output = true;
 bool motor_output = true;
 
-//// Motor initialization
-//Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-//
-//Adafruit_DCMotor *leftMotor = AFMS.getMotor(2);
-//Adafruit_DCMotor *rightMotor = AFMS.getMotor(1);
-//
-//int highSpeed = 40;
-// Sensor initialization
 MPU6050 mpu;
 
 const int FLEX_PIN = A4; // Pin connected to voltage divider output
@@ -127,37 +119,14 @@ void read_flex() {
     Serial.println();
   }
   
-//  if (0 <= bend_angle && bend_angle < 25) {
-//    wheel_speed = 0;
-//  } else if (25 < bend_angle && bend_angle <= 40) {
-//    wheel_speed = 20;
-//  } else if (40 < bend_angle && bend_angle <= 55) {
-//    wheel_speed = 40;
-//  } else if (55 < bend_angle && bend_angle <= 70) {
-//    wheel_speed = 60;
-//  }
+  // Map bend_angle to wheel_speed
   bend_angle = bend_angle - bend_angle_offset;
   if (bend_angle < 10) {
     wheel_speed = 0;
   } else {
     wheel_speed = map(bend_angle, 10, 60, 0, 130); 
   }
-//  if (bend_angle < 320) {
-//      wheel_speed = 0;
-//    } else if (320 < bend_angle && bend_angle <= 330) {
-//      wheel_speed = 30;
-//    } else if (330 < bend_angle && bend_angle <= 340) {
-//      wheel_speed = 50;
-//    } else if (340 < bend_angle && bend_angle <= 350) {
-//      wheel_speed = 70;
-//    } else if (350 < bend_angle && bend_angle <= 360) {
-//      wheel_speed = 90;
-//    } else if (360 < bend_angle && bend_angle <= 370) {
-//      wheel_speed = 110;
-//    }
-  Serial.println("****");
-  Serial.println(bend_angle);
-  Serial.println(wheel_speed);
+
 }
 
 void read_IMU() {
@@ -188,32 +157,9 @@ void read_IMU() {
       roll += deadzone;
     }
   }
-//   Output
-//  Serial.print(" Pitch = ");
-//  Serial.print(pitch);
-//  Serial.print(" Roll = ");
-//  Serial.print(roll);
-//  
-//  Serial.println();
-//  // Read normalized values
-//  Vector norm = mpu.readNormalizeGyro();
-//
-//  // Calculate Pitch, Roll and Yaw
-//  pitch = pitch + norm.YAxis * IMU_INTERVAL / 1000;
-//  roll = roll + norm.XAxis * IMU_INTERVAL / 1000;
-//  yaw = yaw + norm.ZAxis * IMU_INTERVAL / 1000;
-//
+
   wheel_differential = 0.5 * roll;
-//
-//  if (imu_output) {
-//    Serial.print(" Pitch = ");
-//    Serial.print(pitch);
-//    Serial.print(" Roll = ");
-//    Serial.print(roll);  
-//    Serial.print(" Yaw = ");
-//    Serial.println(yaw);
-//  }
-  
+
   imu_timer = millis();
 }
 
@@ -253,11 +199,11 @@ void calculate_motor_speeds() {
   }
 
   if (motor_output) {
-//    Serial.println("Left: ");
-//    Serial.print(left_wheel_speed);
-//    Serial.print("  Right: ");
-//    Serial.print(right_wheel_speed);
-//    Serial.println();
+   Serial.println("Left: ");
+   Serial.print(left_wheel_speed);
+   Serial.print("  Right: ");
+   Serial.print(right_wheel_speed);
+   Serial.println();
   }
   
 

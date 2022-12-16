@@ -26,14 +26,6 @@ bool flex_output = false;
 bool imu_output = true;
 bool rst_button_output = true;
 
-//// Motor initialization
-//Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-//
-//Adafruit_DCMotor *leftMotor = AFMS.getMotor(2);
-//Adafruit_DCMotor *rightMotor = AFMS.getMotor(1);
-//
-//int highSpeed = 40;
-// Sensor initialization
 MPU6050 mpu;
 
 const int FLEX_PIN = A4; // Pin connected to voltage divider output
