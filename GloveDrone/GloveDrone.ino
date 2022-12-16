@@ -25,7 +25,6 @@ void configureRadio() {
 bool flex_output = false;
 bool imu_output = true;
 bool rst_button_output = true;
-bool motor_output = true;
 
 //// Motor initialization
 //Adafruit_MotorShield AFMS = Adafruit_MotorShield();
@@ -67,29 +66,13 @@ const int RADIO_INTERVAL = 300;
 float radio_timer = millis();
 
 // Sensor values
-float offset_pitch = 0;
-float offset_roll = 0;
-
-float raw_pitch = 0;
-float raw_roll = 0;
-
 float pitch = 0;
 float roll = 0;
 float yaw = 0;
 
 int bend_angle = 0;
-int bend_angle_offset = 0;
 
-bool is_calibrated = false;
-
-int wheel_speed = 0;
-int wheel_differential = 0;
-int left_wheel_speed = 0;
-int right_wheel_speed = 0;
-int temp_left_wheel_speed = 0;
-int temp_right_wheel_speed = 0;
-
-int deadzone = 5;
+int base_thrust = 0;
 
 void setup() 
 {
@@ -105,17 +88,17 @@ void setup()
 
   // Calibrate gyroscope. The calibration must be at rest.
   // If you don't want calibrate, comment this line.
-  mpu.calibrateGyro();
+//  mpu.calibrateGyro(/3);
   // Set threshold sensivty. Default 3.
   // If you don't want use threshold, comment this line or set 0.
-  mpu.setThreshold(1);
+//  mpu.setThreshold(1);/
   printf_begin();
   configureRadio();
 }
 
 void read_flex() {
   int flexADC = analogRead(FLEX_PIN);
-//  Serial.println(flexADC);
+  Serial.println(flexADC);
   float flexV = flexADC * VCC / 1023.0;
   float flexR = R_DIV * (VCC / flexV - 1.0);
   bend_angle = map(flexR, STRAIGHT_RESISTANCE, BEND_RESISTANCE,
@@ -126,38 +109,11 @@ void read_flex() {
     Serial.println("Bend: " + String(bend_angle) + " degrees");
     Serial.println();
   }
-  
-//  if (0 <= bend_angle && bend_angle < 25) {
-//    wheel_speed = 0;
-//  } else if (25 < bend_angle && bend_angle <= 40) {
-//    wheel_speed = 20;
-//  } else if (40 < bend_angle && bend_angle <= 55) {
-//    wheel_speed = 40;
-//  } else if (55 < bend_angle && bend_angle <= 70) {
-//    wheel_speed = 60;
-//  }
-  bend_angle = bend_angle - bend_angle_offset;
-  if (bend_angle < 10) {
-    wheel_speed = 0;
+  if (bend_angle < 330) {
+    base_thrust = 0;
   } else {
-    wheel_speed = map(bend_angle, 10, 60, 0, 130); 
+    base_thrust = (bend_angle/330) * 1.1;
   }
-//  if (bend_angle < 320) {
-//      wheel_speed = 0;
-//    } else if (320 < bend_angle && bend_angle <= 330) {
-//      wheel_speed = 30;
-//    } else if (330 < bend_angle && bend_angle <= 340) {
-//      wheel_speed = 50;
-//    } else if (340 < bend_angle && bend_angle <= 350) {
-//      wheel_speed = 70;
-//    } else if (350 < bend_angle && bend_angle <= 360) {
-//      wheel_speed = 90;
-//    } else if (360 < bend_angle && bend_angle <= 370) {
-//      wheel_speed = 110;
-//    }
-  Serial.println("****");
-  Serial.println(bend_angle);
-  Serial.println(wheel_speed);
 }
 
 void read_IMU() {
@@ -165,54 +121,34 @@ void read_IMU() {
   Vector normAccel = mpu.readNormalizeAccel();
 
   // Calculate Pitch & Roll
-  raw_pitch = -(atan2(normAccel.XAxis, sqrt(normAccel.YAxis*normAccel.YAxis + normAccel.ZAxis*normAccel.ZAxis))*180.0)/M_PI;
-  raw_roll = (atan2(normAccel.YAxis, normAccel.ZAxis)*180.0)/M_PI;
+  pitch = -(atan2(normAccel.XAxis, sqrt(normAccel.YAxis*normAccel.YAxis + normAccel.ZAxis*normAccel.ZAxis))*180.0)/M_PI;
+  roll = (atan2(normAccel.YAxis, normAccel.ZAxis)*180.0)/M_PI;
 
-  pitch = raw_pitch - offset_pitch;
-  roll = raw_roll - offset_roll;
-  if (-deadzone < pitch && pitch < deadzone) {
+  if (-10 < pitch && pitch < 10) {
     pitch = 0;
   } else {
-    if (pitch > deadzone) {
-      pitch -= deadzone;
+    if (pitch > 10) {
+      pitch -= 10;
     } else {
-      pitch += deadzone;
+      pitch += 10;
     }
   }
-  if (-deadzone < roll && roll < deadzone) {
+  if (-10 < roll && roll < 10) {
     roll = 0;
   } else {
-    if (roll > deadzone) {
-      roll -= deadzone;
+    if (roll > 10) {
+      roll -= 10;
     } else {
-      roll += deadzone;
+      roll += 10;
     }
   }
-//   Output
-//  Serial.print(" Pitch = ");
-//  Serial.print(pitch);
-//  Serial.print(" Roll = ");
-//  Serial.print(roll);
-//  
-//  Serial.println();
-//  // Read normalized values
-//  Vector norm = mpu.readNormalizeGyro();
-//
-//  // Calculate Pitch, Roll and Yaw
-//  pitch = pitch + norm.YAxis * IMU_INTERVAL / 1000;
-//  roll = roll + norm.XAxis * IMU_INTERVAL / 1000;
-//  yaw = yaw + norm.ZAxis * IMU_INTERVAL / 1000;
-//
-  wheel_differential = 0.5 * roll;
-//
-//  if (imu_output) {
-//    Serial.print(" Pitch = ");
-//    Serial.print(pitch);
-//    Serial.print(" Roll = ");
-//    Serial.print(roll);  
-//    Serial.print(" Yaw = ");
-//    Serial.println(yaw);
-//  }
+  // Output
+  Serial.print(" Pitch = ");
+  Serial.print(pitch);
+  Serial.print(" Roll = ");
+  Serial.print(roll);
+  
+  Serial.println();
   
   imu_timer = millis();
 }
@@ -222,59 +158,19 @@ void handle_rst() {
     if (rst_button_output) {
       Serial.println("RST");
     }
-    offset_pitch = raw_pitch;
-    offset_roll = raw_roll;
-    bend_angle_offset = bend_angle;
-    is_calibrated = true;
+    pitch = 0;
+    roll = 0;
+    yaw = 0;
   }
   rst_button_timer = millis();
 }
 
-void calculate_motor_speeds() {
-  if (wheel_speed != 0) {
-    temp_left_wheel_speed = wheel_speed - wheel_differential;
-    temp_right_wheel_speed = wheel_speed + wheel_differential;
-  } else {
-    temp_left_wheel_speed = 0;
-    temp_right_wheel_speed = 0;
-  }
-  
-  if (temp_left_wheel_speed < 0) {
-    temp_left_wheel_speed = 0;
-  }
-  if (temp_right_wheel_speed < 0) {
-    temp_right_wheel_speed = 0;
-  }
-  if (temp_left_wheel_speed > 125) {
-    temp_left_wheel_speed = 125;
-  }
-  if (temp_right_wheel_speed > 125) {
-    temp_right_wheel_speed = 125;
-  }
-
-  if (motor_output) {
-//    Serial.println("Left: ");
-//    Serial.print(left_wheel_speed);
-//    Serial.print("  Right: ");
-//    Serial.print(right_wheel_speed);
-//    Serial.println();
-  }
-  
-
-  left_wheel_speed = temp_left_wheel_speed;
-  right_wheel_speed = temp_right_wheel_speed;
-
-}
-
 void sendData() {
-  if (!is_calibrated) {
-    return;
-  }
-  String str = String(right_wheel_speed) + " " + String(left_wheel_speed) + " "; 
+  String str = String(pitch) + " " + String(roll) + " " + String(base_thrust) + " ";
   int str_len = str.length() + 1; 
   char text[str_len];
+  Serial.println(text);
   str.toCharArray(text, str_len);
-  Serial.println("I'm here");
   Serial.println(text);
   if (!radio.write(&text, sizeof(text))) { //Returns a bool depending on whether it errors or not
     Serial.println(F("Failed, radio.write returned false"));
@@ -295,11 +191,6 @@ void loop()
   if (millis() - flex_timer > FLEX_INTERVAL) {
     read_flex();
     flex_timer = millis();
-  }
-
-  if (millis() - motor_timer > MOTOR_INTERVAL) {
-    calculate_motor_speeds();
-    motor_timer = millis();
   }
 
   if (millis() - radio_timer > RADIO_INTERVAL) {
